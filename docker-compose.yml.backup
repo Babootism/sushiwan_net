@@ -1,0 +1,78 @@
+# ==========================================
+# DOCKER COMPOSE POUR SUSHIWAN_NET
+# ==========================================
+# Ce fichier configure l'environnement de développement
+# avec PostgreSQL et PgAdmin pour la gestion visuelle
+# Emplacement : /Users/ilyesbelhaj/Documents/sushiwan_net/docker-compose.yml
+
+version: '3.8'  # Version de Docker Compose utilisée
+
+services:
+  # ==========================================
+  # SERVICE POSTGRESQL
+  # ==========================================
+  sushiwan_db:
+    image: postgres:15-alpine  # Image PostgreSQL légère et rapide
+    container_name: sushiwan_postgres  # Nom du conteneur pour identification
+    restart: unless-stopped  # Redémarre automatiquement sauf si arrêt manuel
+    
+    # Variables d'environnement pour configurer PostgreSQL
+    environment:
+      POSTGRES_DB: sushiwan_db          # Nom de la base de données principale
+      POSTGRES_USER: sushiwan_admin     # Utilisateur administrateur
+      POSTGRES_PASSWORD: SushiWan2024!  # Mot de passe (changez-le en production)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"  # Support 
+Unicode pour multilingue
+    
+    # Ports exposés (port_hote:port_conteneur)
+    ports:
+      - "5432:5432"  # Port standard PostgreSQL
+    
+    # Volumes pour persistance des données
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Données persistantes
+      - ./backend/src/database/init:/docker-entrypoint-initdb.d  # Scripts d'initialisation
+    
+    # Configuration réseau
+    networks:
+      - sushiwan_network
+
+  # ==========================================
+  # SERVICE PGADMIN (Interface graphique)
+  # ==========================================
+  sushiwan_pgadmin:
+    image: dpage/pgadmin4:latest  # Interface web pour gérer PostgreSQL
+    container_name: sushiwan_pgadmin
+    restart: unless-stopped
+    
+    # Variables d'environnement PgAdmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@sushiwan.com  # Email de connexion
+      PGADMIN_DEFAULT_PASSWORD: admin123         # Mot de passe interface
+      PGADMIN_CONFIG_SERVER_MODE: 'False'        # Mode single-user
+    
+    # Port d'accès à l'interface web
+    ports:
+      - "8080:80"  # Accessible sur http://localhost:8080
+    
+    # Dépendance : PgAdmin démarre après PostgreSQL
+    depends_on:
+      - sushiwan_db
+    
+    # Réseau partagé
+    networks:
+      - sushiwan_network
+
+# ==========================================
+# VOLUMES PERSISTANTS
+# ==========================================
+volumes:
+  postgres_data:  # Volume pour sauvegarder les données même après arrêt conteneur
+    driver: local
+
+# ==========================================
+# RÉSEAUX
+# ==========================================
+networks:
+  sushiwan_network:  # Réseau privé pour communication entre services
+    driver: bridge
